@@ -1,5 +1,29 @@
 {
   "name": "dates-range-parser",
-  "version": "1.0.0",
-  "author": "Xoredge <info@xoredge.com>"
+  "version": "1.0.1",
+  "author": "Xoredge <info@xoredge.com>",
+  "description": "A simple parser for dates range",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xoredge/dates-range-parser",
+    "directory": "./",
+    "branch": "master"
+  },
+  "keywords": [
+    "dates",
+    "range",
+    "parser",
+    "date",
+    "time",
+    "period",
+    "duration",
+    "interval"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/xoredge/dates-range-parser"
 }

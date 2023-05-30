@@ -307,4 +307,4 @@ drp._parseDate = function parseDate(v) {
   return getRange(op, term1, term2, now);
 };
 
-export { drp as default };
+module.exports = drp;
