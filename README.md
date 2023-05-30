@@ -1,8 +1,22 @@
 # Date Range Parser
 
-The **Date Range Parser** is a standalone JavaScript library that provides a natural language-like construct for generating date range queries that would be fed into a database or search service.
+The Date Range Parser is a library that allows parsing and interpreting human-readable date and time expressions and converting them into machine-readable date ranges.
 
-This is a preferred option for power user tools as standard date widgets require the use of a mouse.
+## Features
+
+- Supports various date and time formats
+- Handles relative date and time expressions
+- Parses date ranges and time offsets
+- Supports combining ranges and offsets
+- Provides a simple and intuitive API
+
+## Installation
+
+The Date Range Parser can be installed via package managers like npm:
+
+```shell
+npm install date-range-parser
+```
 
 The Date Range Parser also contains a number parser that follows the same constructs.
 
