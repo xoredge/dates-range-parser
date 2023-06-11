@@ -25,6 +25,8 @@ SOFTWARE.
 
 const drp = {};
 
+drp.UTC = false; // set to true to use UTC dates  (default is local time)
+
 drp.defaultRange = 1000 * 60 * 60 * 24;
 
 drp.now = null; // set a different value for now than the time at function invocation
@@ -40,8 +42,12 @@ drp.parse = (v) => {
     if (r.end) r.end--; // remove 1 millisecond from the final end range
     return {
       value: {
-        fromDate: new Date(r.start).toISOString(),
-        toDate: new Date(r.end).toISOString(),
+        fromDate: drp.UTC
+          ? new Date(r.start).toISOString()
+          : new Date(r.start).toString(),
+        toDate: drp.UTC
+          ? new Date(r.end).toISOString()
+          : new Date(r.end).toString(),
         timeRange: v,
       },
     };
@@ -84,22 +90,32 @@ drp.parse = (v) => {
 // create an array of date components from a Date
 function makeArray(d) {
   const da = new Date(d);
-  return [
-    da.getUTCFullYear(),
-    da.getUTCMonth() + 1,
-    da.getUTCDate(),
-    da.getUTCHours(),
-    da.getUTCMinutes(),
-    da.getUTCSeconds(),
-    da.getUTCMilliseconds(),
-  ];
+  return drp.UTC
+    ? [
+        da.getUTCFullYear(),
+        da.getUTCMonth() + 1,
+        da.getUTCDate(),
+        da.getUTCHours(),
+        da.getUTCMinutes(),
+        da.getUTCSeconds(),
+        da.getUTCMilliseconds(),
+      ]
+    : [
+        da.getFullYear(),
+        da.getMonth() + 1,
+        da.getDate(),
+        da.getHours(),
+        da.getMinutes(),
+        da.getSeconds(),
+        da.getMilliseconds(),
+      ];
 }
 
 // convert an array of date components into a Date
 function fromArray(a) {
   const d = [...a];
   d[1]--;
-  return Date.UTC.apply(null, d);
+  return drp.UTC ? new Date(Date.UTC(...d)) : new Date(...d);
 }
 
 // create an array of date components with all entries with less significance than p (precision) zeroed out.
@@ -226,7 +242,9 @@ function procTerm(term, origin) {
     function dra(p, o, r) {
       const dt = precArray(origin, p, o);
       if (r) {
-        dt[2] -= new Date(fromArray(dt)).getUTCDay();
+        dt[2] -= drp.UTC
+          ? new Date(fromArray(dt)).getUTCDay()
+          : new Date(fromArray(dt)).getDay();
       }
       return makePrecRange(dt, p, r);
     }
