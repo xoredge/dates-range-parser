@@ -1,6 +1,6 @@
 {
   "name": "dates-range-parser",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": "Xoredge <info@xoredge.com>",
   "description": "A simple parser for dates range",
   "main": "index.js",

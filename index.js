@@ -42,12 +42,8 @@ drp.parse = (v) => {
     if (r.end) r.end--; // remove 1 millisecond from the final end range
     return {
       value: {
-        fromDate: drp.UTC
-          ? new Date(r.start).toISOString()
-          : new Date(r.start).toString(),
-        toDate: drp.UTC
-          ? new Date(r.end).toISOString()
-          : new Date(r.end).toString(),
+        from: r.start,
+        to: r.end,
         timeRange: v,
       },
     };
@@ -115,7 +111,9 @@ function makeArray(d) {
 function fromArray(a) {
   const d = [...a];
   d[1]--;
-  return drp.UTC ? new Date(Date.UTC(...d)) : new Date(...d);
+  return drp.UTC
+    ? new Date(Date.UTC(...d)).getTime()
+    : new Date(...d).getTime();
 }
 
 // create an array of date components with all entries with less significance than p (precision) zeroed out.
