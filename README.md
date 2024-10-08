@@ -38,6 +38,38 @@ Often these values can be passed directly to the db/search service.
 
 DateRangeParser has a property .UTC which is by default false, and all calculations are happening in local timezone. If set to true DatesRangeParser.js wil work entirely in UTC / GMT / Z (+0) timezone. Usually databases will store dates like this.
 
+##### In version 1.1.0 support for target time zone calculations
+
+After version 1.1.0, you can set the .TZ property to a time zone and the relative calculations of times like today, tomorrow, next week will start happening in the target time zone.
+
+Example:
+
+```javascript
+// 09 september 2021 20:00:00 UTC
+const now = new Date(1631212800000);
+drp.now = now;
+drp.TZ = "Asia/Karachi"; // Pakistan Standard Time, UTC+5
+
+const output = drp.parse("today");
+/* 
+ output = { 
+    value: { 
+       from: 1631214000000, // 10th September 2021 00:00:00
+       to: 1631300399000,   // 10th September 2021 23:59:59
+       timeRange: 'today' 
+       }, 
+    error: null
+ }
+ 
+explanation: above 'now' Date is in UTC => 9 Sept, but in target time zone GMT+5 it is 10th September 2021
+ already so the today range will be the 10th of September of target time zone
+*/
+
+// which if converted to UTC becomes again
+const from = new Date(output.from); // will be 9th September 2021 19:00:00
+const to = new Date(output.to); // 10th September 2021 18:59:59
+```
+
 #### Note on now
 
 The date range parser can generate several types of queries relative to now, which is defined as the current time on the user's computer (to the millisecond).

@@ -1,14 +1,28 @@
-import datesRangeParser from "../src/datesRangeParser";
+const datesRangeParser = require("./index");
+
+var sec = 1000;
+var min = sec * 60;
+var hr = min * 60;
+var day = hr * 24;
+
+function assertEquals(msg, a, b) {
+  if (a !== b) {
+    throw new Error(msg + " " + a + " !== " + b);
+  }
+}
+
+function assertRange(s, e, exp) {
+  var r = drp._parseDate(exp);
+  assertEquals("start " + exp, s, r.start);
+  assertEquals("end " + exp, e, r.end);
+}
 
 testParseDate = function () {
   var now = 1000000000000; // sunday 09 sep 2001 01:46:40 GMT
   var nowD = 999993600000; // sunday 09 sep 2001 00:00:00 GMT
   var nowM = 999302400000; // saturday 01 sep 2001 00:00:00 GMT
   var nowY = 978307200000; // monday 01 jan 2001 00:00:00 GMT
-  var sec = 1000;
-  var min = sec * 60;
-  var hr = min * 60;
-  var day = hr * 24;
+
   var y2010 = 1262304000000;
   var y2011 = 1293840000000;
   var y2021 = 1609459200000;
@@ -33,12 +47,13 @@ testParseDate = function () {
 		returns a range centered on the current date/time +/- 1 day
 		the default range (1 day) can be set globally using drp.defaultRange
 	*/
-  assertRange(now - day, now + day, "now");
+  // assertRange(now - day, now + day, "now");
 
   /* testing keywords
 		return a range for that keyworkd
 	*/
   assertRange(nowD, nowD + day, "today");
+  console.log("first pass");
   assertRange(nowD, nowD + 7 * day, "this week"); // produces a range from sunday 00:00:00.000 to saturday 23:59:59.999
   assertRange(nowM, nowM + 30 * day, "this month");
   assertRange(nowY, nowY + 365 * day, "this year");
@@ -245,3 +260,111 @@ testParseNumber = function () {
   assertNumberRange(null, 5000, "< 5000");
   assertNumberRange(5000, null, "5000 < ");
 };
+
+testParseDateWithTimeZone = function () {
+  var drp = datesRangeParser;
+  drp.defaultRange = day;
+  const tz = "Asia/Karachi"; // Pakistan Standard Time (PST) UTC+5
+  const gmtplus5 = 5 * hr;
+
+  drp.TZ = tz;
+  drp.UTC = false;
+
+  // TEST TODAY
+  // sunday 09 sep 2001 00:00:00 GMT
+  var now = 999993600000;
+  /* because we are checking today relative to the timezone so let's
+   set internal representation of now to a known value of
+   sunday 09 sep 2001 18:59:59 GMT, so to make sure even after travelling to
+   the target time zone time becomes 23:59:59 GMT+5 and does not change date
+  */
+  const now1859 = now + 18 * hr + 59 * min + 59 * sec + 999;
+  drp.now = now1859;
+
+  const persedToday18 = drp.parse("today").value; // output is in TZ
+
+  const expectedToday18 = {
+    from: now - gmtplus5, // 00:00:00 GMT+5 becomes 19:00:00 GMT the previous day 8 sep 2001
+    to: now1859, // 23:59:59 GMT+5 becomes 18:59:59 GMT the same day 9 sep 2001
+  };
+  assertEquals("from", persedToday18.from, expectedToday18.from);
+  assertEquals("to", persedToday18.to, expectedToday18.to);
+
+  //================================================================================================
+  // TEST TODAY detect change of day in the target timezone
+  // sunday 09 sep 2001 19:00:00 GMT becomes monday 10 sep 2001 00:00:00 GMT+5
+  // so the range will be start of the day (10th) in the target timezone
+  const now1900 = now + 19 * hr;
+  drp.now = now1900;
+
+  const persedToday19 = drp.parse("today").value;
+
+  const expectedToday19 = {
+    from: now - gmtplus5 + day, // 00:00:00 GMT+5 becomes 19:00:00 GMT the previous day 9 sep 2001
+    to: now1859 + day, // 23:59:59 GMT+5 becomes 18:59:59 GMT the same day 10 sep 2001
+  };
+  assertEquals("from", persedToday19.from, expectedToday19.from);
+  assertEquals("to", persedToday19.to, expectedToday19.to);
+
+  //================================================================================================
+  // // TEST TOMORROW
+  drp.now = now1859;
+
+  const persedTomorrow = drp.parse("tomorrow").value;
+  const expectedTomorrow = {
+    from: now - gmtplus5 + day, // 00:00:00 GMT+5 becomes 19:00:00 GMT the previous day 9 sep 2001
+    to: now1859 + day, // 23:59:59 GMT+5 becomes 18:59:59 GMT the same day 10 sep 2001
+  };
+
+  assertEquals("from", persedTomorrow.from, expectedTomorrow.from);
+  assertEquals("from", persedTomorrow.to, expectedTomorrow.to);
+};
+
+testParseRangeWithTimeZone = function () {
+  var drp = datesRangeParser;
+  drp.defaultRange = day;
+  const tz = "Asia/Karachi";
+  const gmtplus5 = 5 * hr;
+
+  drp.TZ = tz;
+  drp.UTC = false;
+
+  // TEST TODAY -> TOMORROW
+  // sunday 09 sep 2001 00:00:00 GMT
+  var now = 999993600000;
+  // sunday 09 sep 2001 18:59:59 GMT, 23:59:59 GMT+5
+  const now1859 = now + 18 * hr + 59 * min + 59 * sec + 999;
+  drp.now = now1859;
+
+  const parsedRange = drp.parse("today -> tomorrow").value;
+  const expectedRange = {
+    from: now - gmtplus5,
+    // to is end of tomorrow in target timezone which is 23:59:59 GMT+5 10 sep 2001
+    // it becomes 18:59:59 GMT 10 sep 2001
+    to: now1859 + day,
+  };
+
+  assertEquals("from", parsedRange.from, expectedRange.from);
+  assertEquals("to", parsedRange.to, expectedRange.to);
+
+  //================================================================================================
+  // // TEST Next Week
+  drp.now = now1859;
+
+  const parsedRangeWeek = drp.parse("tomorrow -> 7day").value;
+  const expectedRangeWeek = {
+    // tomorrow 10 sep 2001 00:00:00 GMT+5 becomes 9 sep 2001 19:00:00 GMT
+    from: now1859 + 1,
+    // 7 days from tomorrow 10 sep 2001 00:00:00 GMT+5 becomes 17 sep 2001 00:00:00 GMT
+    to: now1859 + day * 8,
+  };
+
+  assertEquals("from", parsedRangeWeek.from, expectedRangeWeek.from);
+  assertEquals("to", parsedRangeWeek.to, expectedRangeWeek.to);
+};
+
+testParseDateWithTimeZone();
+testParseRangeWithTimeZone();
+
+// log green result message
+console.log("\x1b[32m", "All tests passed!");

@@ -26,6 +26,7 @@ SOFTWARE.
 const drp = {};
 
 drp.UTC = false; // set to true to use UTC dates  (default is local time)
+drp.TZ = null; // set to a timezone string to use a specific timezone (e.g. "America/New_York")
 
 drp.defaultRange = 1000 * 60 * 60 * 24;
 
@@ -309,7 +310,14 @@ function procTerm(term, origin) {
 }
 
 drp._parseDate = function parseDate(v) {
-  const now = this.now || new Date().getTime();
+  let tzNow = new Date().getTime();
+  if (drp.TZ) {
+    const tzDate = new Date(
+      new Date(this.now || tzNow).toLocaleString("en-US", { timeZone: drp.TZ })
+    );
+    tzNow = tzDate.getTime();
+  }
+  const now = tzNow;
 
   if (!v) {
     return { start: null, end: null };
@@ -320,7 +328,38 @@ drp._parseDate = function parseDate(v) {
   const op = terms[2] || "";
   const term2 = terms[3] ? procTerm(terms[3], now) : null;
 
+  const range = getRange(op, term1, term2, now);
+
+  if (drp.TZ) {
+    return {
+      start: replaceTimeZonePart(range.start, drp.TZ),
+      end: replaceTimeZonePart(range.end, drp.TZ),
+    };
+  }
+
   return getRange(op, term1, term2, now);
+};
+
+/**
+ * Travels the date and time to the target time zone.
+ * i.e. if the date is 2024-01-01 00:00:00 GMT+3, and the target time zone is GMT+5,
+ * the result will be 2024-01-01 00:00:00 GMT+5. ignoes the timezone from the date object passed.
+ */
+const replaceTimeZonePart = (date, targetTimeZone = "UTC") => {
+  const onlyDateTimePart = new Intl.DateTimeFormat("en-GB", {
+    timeStyle: "short",
+    dateStyle: "medium",
+  }).format(new Date(date));
+  const newTimeZonePart = new Intl.DateTimeFormat("en-US", {
+    timeZoneName: "short",
+    year: "numeric",
+    timeZone: targetTimeZone,
+  })
+    .format(Date.now())
+    .split(",")[1]
+    .trim(); // result like "2024, GMT+3"
+
+  return Date.parse(`${onlyDateTimePart} ${newTimeZonePart}`);
 };
 
 module.exports = drp;
